@@ -40,7 +40,7 @@ void app_main(void)
         int32_t temperature = (RxData[3] << 8) | RxData[4];
         temperature = (temperature << 4) | (RxData[5] >> 4);
 
-        ESP_LOGI(TAG, "Temperature: %d '\n'", temperature);
+        ESP_LOGI(TAG, "Temperature: %d \n", temperature);
 
         vTaskDelay(500 / portTICK_PERIOD_MS);
     }
