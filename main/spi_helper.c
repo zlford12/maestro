@@ -3,19 +3,21 @@
 #include "esp_err.h"
 #include "esp_log.h"
 #include "driver/spi_master.h"
+#include "esp_eth_mac_w5500.h"
+#include "esp_eth_phy_w5500.h"
 
+// SPI Config
 #   define ESP_HOST         SPI2_HOST
 #   define PIN_NUM_MISO     19
 #   define PIN_NUM_MOSI     23
 #   define PIN_NUM_CLK      18
-#   define PIN_NUM_CS       5
 
-static const char TAG[] = "SPI";
+static constexpr char TAG[] = "SPI";
 esp_err_t spi_ret;
 
 void SPI_BusConfig()
 {
-    //Initialize SPI bus
+    // Initialize SPI bus
     ESP_LOGI(TAG, "Initializing bus SPI%d...", ESP_HOST + 1);
     spi_bus_config_t const bus_config = {
         .miso_io_num = PIN_NUM_MISO,
@@ -29,10 +31,10 @@ void SPI_BusConfig()
     ESP_ERROR_CHECK(spi_ret);
 }
 
-void SPI_SensorConfig(spi_device_handle_t *handle)
+void SPI_SensorConfig(spi_device_handle_t *handle, int cs_pin)
 {
     // Initialize SPI device
-    ESP_LOGI(TAG, "Adding SPI Device on GPIO%d...", PIN_NUM_CS);
+    ESP_LOGI(TAG, "Adding SPI Device on GPIO%d...", cs_pin);
     spi_device_interface_config_t const dev_config = {
         .command_bits = 0,
         .address_bits = 0,
@@ -40,7 +42,7 @@ void SPI_SensorConfig(spi_device_handle_t *handle)
         .clock_speed_hz = 10000000,
         .duty_cycle_pos = 128,
         .mode = 0,
-        .spics_io_num = PIN_NUM_CS,
+        .spics_io_num = cs_pin,
         .queue_size = 3
     };
 
