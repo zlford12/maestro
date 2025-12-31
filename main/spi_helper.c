@@ -63,13 +63,13 @@ void SPI_SensorConfig(spi_device_handle_t *handle, int cs_pin)
     ESP_ERROR_CHECK(spi_ret);
 }
 
-void SPI_Transact(spi_device_handle_t handle, uint8_t *buffertoStore)
+void SPI_Transact(spi_device_handle_t handle, uint8_t *buff)
 {
     spi_transaction_t trans = {0};
 
     uint8_t constexpr tx_data[1] = {0xF7};
     trans.tx_buffer = tx_data;
-    trans.rx_buffer = buffertoStore;
+    trans.rx_buffer = buff;
     trans.length = 5*8 + sizeof(tx_data)*8;
     ESP_LOGI(TAG, "Transaction Size: %d bits", trans.length);
 
