@@ -45,9 +45,7 @@ void SocketListen(char *message, int message_size)
     if (client_sock >= 0)
     {
         ESP_LOGI(TAG, "Closing existing client socket...");
-        shutdown(client_sock, SHUT_RDWR);
-        closesocket(client_sock);
-        client_sock = -1;
+        SocketClose();
     }
     ESP_LOGI(TAG, "Waiting for a new client connection...");
 
@@ -65,5 +63,19 @@ void SocketListen(char *message, int message_size)
         bytes_read--;
     }
     ESP_LOGI(TAG, "Received %d bytes from client: %s", bytes_read, message);
-    
+}
+
+void SendFrames(uint32_t *buff, int size)
+{
+    write(client_sock, buff, size);
+}
+
+void SocketClose()
+{
+    if (client_sock >= 0)
+    {
+        shutdown(client_sock, SHUT_RDWR);
+        closesocket(client_sock);
+        client_sock = -1;
+    }
 }

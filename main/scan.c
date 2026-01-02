@@ -3,12 +3,17 @@
 #include "encoders.h"
 #include "esp_log.h"
 #include "esp_timer.h"
+#include "socket_helper.h"
 #include "driver/gpio.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
 
 #define LINAC_PIN 32
-#define LDA_PIN 33
+#define LDA_PIN 2
 #define MIN_PULSE_FREQ 2
 #define MAX_PULSE_FREQ 400
+#define MAX_LINE_SIZE 256
+#define MAX_POSITION 2100
 
 static constexpr char TAG[] = "scan";
 const esp_timer_create_args_t pulse_timer_args = {
@@ -16,7 +21,10 @@ const esp_timer_create_args_t pulse_timer_args = {
     .name = "pulse_timer"
 };
 esp_timer_handle_t pulse_timer;
-static uint8_t gpio_state = 0;
+static uint8_t pulse_state = 0;
+static uint32_t line_buffer[MAX_LINE_SIZE];
+static uint32_t line_buffer_size = 0;
+bool read_encoders = false;
 
 void ScanInit()
 {
@@ -37,15 +45,18 @@ void ScanInit()
 
 void RunScan()
 {
-    uint8_t RxData[6];
-
     ESP_LOGI(TAG, "Running scan");
-    ReadEncoders(RxData);
 
-    int32_t temperature = (RxData[3] << 8) | RxData[4];
-    temperature = (temperature << 4) | (RxData[5] >> 4);
+    line_buffer_size = 0;
+    read_encoders = true;
 
-    ESP_LOGI(TAG, "Temperature: %d \n", temperature);
+    while (read_encoders)
+    {
+        vTaskDelay(100 / portTICK_PERIOD_MS);
+    }
+
+    ESP_LOGI(TAG, "Scan finished, %d frames captured", line_buffer_size);
+    SendFrames(line_buffer, line_buffer_size * sizeof(uint32_t));
 }
 
 void SetPulseFrequency(uint16_t new_freq)
@@ -64,13 +75,27 @@ void SetPulseFrequency(uint16_t new_freq)
 
 static void PulseTimer(void *arg)
 {
-    gpio_state = !gpio_state;
-    gpio_set_level(LINAC_PIN, gpio_state);
-    gpio_set_level(LDA_PIN, gpio_state);
+    pulse_state = !pulse_state;
+    bool acquire = pulse_state && read_encoders;
+    gpio_set_level(LINAC_PIN, pulse_state);
+    gpio_set_level(LDA_PIN, acquire);
 
-    if (gpio_state)
+    if (acquire)
     {
-        ESP_LOGI(TAG, "Pulse rising edge");
+        uint8_t RxData[6];
+        ReadEncoders(RxData);
+        int32_t position = (RxData[3] << 8) | RxData[4];
+        line_buffer[line_buffer_size] = (position << 4) | (RxData[5] >> 4);
+        //ESP_LOGI(TAG, "Temperature: %d \n", line_buffer[line_buffer_size]);
+
+        if (line_buffer_size == MAX_LINE_SIZE - 1 || line_buffer[line_buffer_size] > MAX_POSITION)
+        {
+            read_encoders = false;
+        }
+        else
+        {
+            line_buffer_size++;
+        }
     }
 }
 
