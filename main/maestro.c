@@ -21,6 +21,7 @@ void app_main(void)
     EncoderInit();
     WifiConfig();
     SocketInit();
+    ScanInit();
 
     while (1) {
         if (!WifiConnected())
@@ -36,6 +37,18 @@ void app_main(void)
         if (strcmp(cmd, "scan") == 0)
         {
             RunScan();
+        }
+        else if (strncmp(cmd, "setfreq ", 8) == 0)
+        {
+            uint16_t new_freq = atoi(cmd + 8);
+            if (new_freq > 0)
+            {
+                SetPulseFrequency(new_freq);
+            }
+            else
+            {
+                ESP_LOGI(TAG, "Invalid frequency value");
+            }
         }
         else
         {

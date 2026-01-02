@@ -4,10 +4,10 @@
 #include "spi_helper.h"
 #include "driver/spi_master.h"
 
-#define T_ENC_CS       4
-#define R_ENC_CS       5
-#define S_ENC_CS       3
-#define D_ENC_CS       2
+#define T_ENC_CS       5
+#define R_ENC_CS       4
+#define S_ENC_CS       25
+#define D_ENC_CS       24
 
 spi_device_handle_t t_enc_handle, r_enc_handle, s_enc_handle, d_enc_handle;
 static constexpr char TAG[] = "encoders";
