@@ -1,5 +1,6 @@
 #include "spi_helper.h"
 #include <string.h>
+#include "pins.h"
 #include "esp_err.h"
 #include "esp_log.h"
 #include "driver/spi_master.h"
@@ -8,9 +9,6 @@
 
 // SPI Config
 #   define ESP_HOST         SPI2_HOST
-#   define PIN_NUM_MISO     19
-#   define PIN_NUM_MOSI     23
-#   define PIN_NUM_CLK      18
 
 static constexpr char TAG[] = "SPI";
 esp_err_t spi_ret;

@@ -1,5 +1,6 @@
 #include "scan.h"
 #include <stdint.h>
+#include "pins.h"
 #include "encoders.h"
 #include "esp_log.h"
 #include "esp_timer.h"
@@ -8,8 +9,6 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 
-#define LINAC_PIN 32
-#define LDA_PIN 2
 #define MIN_PULSE_FREQ 2
 #define MAX_PULSE_FREQ 400
 #define MAX_LINE_SIZE 256
