@@ -21,11 +21,13 @@ const esp_timer_create_args_t pulse_timer_args = {
 };
 esp_timer_handle_t pulse_timer;
 static uint8_t pulse_state = 0;
+static uint32_t position;
 static uint32_t line_buffer[MAX_LINE_SIZE];
 static uint32_t line_buffer_size = 0;
 static uint32_t roi_min = 0;
 static uint32_t roi_max = 2100;
 volatile bool read_encoders = false;
+bool acquire = false;
 static TaskHandle_t scan_task_hdl;
 
 void ScanInit()
@@ -83,7 +85,6 @@ static void PulseTimer(void *arg)
 {
     // create 50% duty cycle pulse
     pulse_state = !pulse_state;
-    bool acquire = false;
 
     // set trigdat on rising edges
     if (pulse_state)
@@ -91,46 +92,44 @@ static void PulseTimer(void *arg)
         gpio_set_level(LDA_TRIGDAT0, 1);
     }
 
+    // linac/lda trigger lags pulse_state
+    esp_rom_delay_us(5);
+    gpio_set_level(LINAC_PIN, pulse_state);
+    gpio_set_level(LDA_TRIGGER, acquire && pulse_state);
+
+    if (!pulse_state)
+    {
+        return;
+    }
+
+    // clear trigdat after rising edge
+    esp_rom_delay_us(5);
+    gpio_set_level(LDA_TRIGDAT0, 0);
+
     // conditionally read translate encoder on rising edges
-    if (pulse_state && read_encoders)
+    bool acquire_cache = acquire;
+    if (read_encoders)
     {
         uint8_t RxData[6];
         ReadEncoders(RxData);
-        int32_t position = (RxData[3] << 8) | RxData[4];
-        line_buffer[line_buffer_size] = (position << 4) | (RxData[5] >> 4);
-        //ESP_LOGI(TAG, "Temperature: %d \n", line_buffer[line_buffer_size]);
+        position = (RxData[3] << 8) | RxData[4];
+        position = (position << 4) | (RxData[5] >> 4);
 
-        acquire = (line_buffer[line_buffer_size] >= roi_min) && (line_buffer[line_buffer_size] <= roi_max);
+        acquire = (position >= roi_min) && (position <= roi_max);
+    }
 
-        if (line_buffer[line_buffer_size] >= roi_min)
+    if (acquire_cache)
+    {
+        if (line_buffer_size < MAX_LINE_SIZE)
         {
-            if (line_buffer_size == MAX_LINE_SIZE - 1 || line_buffer[line_buffer_size] > roi_max)
+            line_buffer[line_buffer_size++] = position;
+            if (acquire)
             {
-                read_encoders = false;
-                if (scan_task_hdl != NULL)
-                {
-                    xTaskNotify(scan_task_hdl, 0, eNoAction);
-                }
-            }
-            else
-            {
-                line_buffer_size++;
+                return;
             }
         }
-    }
 
-    // linac/lda trigger lags pulse_state 10us
-    esp_rom_delay_us(10);
-    gpio_set_level(LINAC_PIN, pulse_state);
-    gpio_set_level(LDA_TRIGGER, acquire);
-
-
-    // clear trigdat after rising edge
-    if (pulse_state)
-    {
-        esp_rom_delay_us(10);
-        gpio_set_level(LDA_TRIGDAT0, 0);
+        read_encoders = false;
+        xTaskNotify(scan_task_hdl, 0, eNoAction);
     }
 }
-
-
