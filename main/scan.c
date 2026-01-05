@@ -59,7 +59,7 @@ void RunScan()
 
 void SetPulseFrequency(uint16_t new_freq)
 {
-    if (new_freq < MAX_PULSE_FREQ && new_freq > MIN_PULSE_FREQ)
+    if (new_freq <= MAX_PULSE_FREQ && new_freq >= MIN_PULSE_FREQ)
     {
         ESP_ERROR_CHECK(esp_timer_stop(pulse_timer));
         ESP_ERROR_CHECK(esp_timer_start_periodic(pulse_timer, 1000000 / (2 * new_freq)));
