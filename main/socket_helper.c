@@ -80,7 +80,9 @@ void SendFrames(const uint32_t *buff, uint32_t size)
 
 void SendResponse(const char *response)
 {
-    write(client_sock, response, strlen(response));
+    char buffer[256];
+    snprintf(buffer, sizeof(buffer), "%s\n", response);
+    write(client_sock, buffer, strlen(buffer));
 }
 
 void SocketClose()
