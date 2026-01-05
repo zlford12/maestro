@@ -65,9 +65,17 @@ void SocketListen(char *message, int message_size)
     ESP_LOGI(TAG, "Received %d bytes from client: %s", bytes_read, message);
 }
 
-void SendFrames(uint32_t *buff, int size)
+void SendFrames(const uint32_t *buff, uint32_t size)
 {
-    write(client_sock, buff, size);
+    //write(client_sock, buff, size);
+
+    uint32_t count = size / sizeof(uint32_t);
+    char text_buf[32]; // Buffer for one number string
+
+    for (uint32_t i = 0; i < count; i++) {
+        int len = snprintf(text_buf, sizeof(text_buf), "%lu\n", buff[i]);
+        write(client_sock, text_buf, len);
+    }
 }
 
 void SocketClose()

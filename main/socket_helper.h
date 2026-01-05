@@ -4,7 +4,7 @@
 
 void SocketInit();
 void SocketListen(char *message, int message_size);
-void SendFrames(uint32_t *buff, int size);
+void SendFrames(const uint32_t *buff, uint32_t size);
 void SocketClose();
 
 #endif
