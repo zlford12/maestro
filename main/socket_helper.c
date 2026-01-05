@@ -78,6 +78,11 @@ void SendFrames(const uint32_t *buff, uint32_t size)
     }
 }
 
+void SendResponse(const char *response)
+{
+    write(client_sock, response, strlen(response));
+}
+
 void SocketClose()
 {
     if (client_sock >= 0)

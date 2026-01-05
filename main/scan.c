@@ -64,10 +64,15 @@ void SetPulseFrequency(uint16_t new_freq)
         ESP_ERROR_CHECK(esp_timer_stop(pulse_timer));
         ESP_ERROR_CHECK(esp_timer_start_periodic(pulse_timer, 1000000 / (2 * new_freq)));
         ESP_LOGI(TAG, "Pulse frequency updated to %d Hz", new_freq);
+
+        char freq_str[16];
+        sprintf(freq_str, "%d", new_freq);
+        SendResponse(freq_str);
     }
     else
     {
         ESP_LOGI(TAG, "Pulse frequency %d Hz is out of range (%d - %d Hz)", new_freq, MIN_PULSE_FREQ, MAX_PULSE_FREQ);
+        SendResponse("invalid");
     }
 }
 

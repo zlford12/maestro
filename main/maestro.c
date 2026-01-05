@@ -47,11 +47,13 @@ void app_main(void)
             else
             {
                 ESP_LOGI(TAG, "Invalid frequency value");
+                SendResponse("invalid");
             }
         }
         else
         {
             ESP_LOGI(TAG, "Unknown command");
+            SendResponse("invalid");
             continue;
         }
 
