@@ -55,7 +55,7 @@ void SPI_SensorConfig(spi_device_handle_t *handle, int cs_pin)
     trans.tx_buffer = tx_data;
     trans.rx_buffer = NULL;
     trans.length = sizeof(tx_data)*8;
-    ESP_LOGI(TAG, "Transaction Size: %d bits", trans.length);
+    //ESP_LOGI(TAG, "Transaction Size: %d bits", trans.length);
 
     spi_ret = spi_device_transmit(*handle, &trans);
     ESP_ERROR_CHECK(spi_ret);

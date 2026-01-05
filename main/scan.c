@@ -8,11 +8,11 @@
 #include "driver/gpio.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+#include "esp_rom_sys.h"
 
 #define MIN_PULSE_FREQ 2
 #define MAX_PULSE_FREQ 400
 #define MAX_LINE_SIZE 256
-#define MAX_POSITION 2100
 
 static constexpr char TAG[] = "scan";
 const esp_timer_create_args_t pulse_timer_args = {
@@ -23,7 +23,9 @@ esp_timer_handle_t pulse_timer;
 static uint8_t pulse_state = 0;
 static uint32_t line_buffer[MAX_LINE_SIZE];
 static uint32_t line_buffer_size = 0;
-bool read_encoders = false;
+static uint32_t roi_min = 0;
+static uint32_t roi_max = 2100;
+volatile bool read_encoders = false;
 static TaskHandle_t scan_task_hdl;
 
 void ScanInit()
@@ -31,13 +33,14 @@ void ScanInit()
     gpio_config_t io_conf = {};
     io_conf.intr_type = GPIO_INTR_DISABLE;
     io_conf.mode = GPIO_MODE_OUTPUT;
-    io_conf.pin_bit_mask = (1ULL << LINAC_PIN) | (1ULL << LDA_TRIGGER);
+    io_conf.pin_bit_mask = (1ULL << LINAC_PIN) | (1ULL << LDA_TRIGGER) | (1ULL << LDA_TRIGDAT0);
     io_conf.pull_down_en = GPIO_PULLDOWN_DISABLE;
     io_conf.pull_up_en = GPIO_PULLUP_DISABLE;
     gpio_config(&io_conf);
 
     gpio_set_drive_capability(LINAC_PIN, GPIO_DRIVE_CAP_3);
     gpio_set_drive_capability(LDA_TRIGGER, GPIO_DRIVE_CAP_3);
+    gpio_set_drive_capability(LDA_TRIGDAT0, GPIO_DRIVE_CAP_3);
 
     ESP_ERROR_CHECK(esp_timer_create(&pulse_timer_args, &pulse_timer));
     ESP_ERROR_CHECK(esp_timer_start_periodic(pulse_timer, 1000000 / (2 * MIN_PULSE_FREQ)));
@@ -78,12 +81,18 @@ void SetPulseFrequency(uint16_t new_freq)
 
 static void PulseTimer(void *arg)
 {
+    // create 50% duty cycle pulse
     pulse_state = !pulse_state;
-    bool acquire = pulse_state && read_encoders;
-    gpio_set_level(LINAC_PIN, pulse_state);
-    gpio_set_level(LDA_TRIGGER, acquire);
+    bool acquire = false;
 
-    if (acquire)
+    // set trigdat on rising edges
+    if (pulse_state)
+    {
+        gpio_set_level(LDA_TRIGDAT0, 1);
+    }
+
+    // conditionally read translate encoder on rising edges
+    if (pulse_state && read_encoders)
     {
         uint8_t RxData[6];
         ReadEncoders(RxData);
@@ -91,18 +100,36 @@ static void PulseTimer(void *arg)
         line_buffer[line_buffer_size] = (position << 4) | (RxData[5] >> 4);
         //ESP_LOGI(TAG, "Temperature: %d \n", line_buffer[line_buffer_size]);
 
-        if (line_buffer_size == MAX_LINE_SIZE - 1 || line_buffer[line_buffer_size] > MAX_POSITION)
+        acquire = (line_buffer[line_buffer_size] >= roi_min) && (line_buffer[line_buffer_size] <= roi_max);
+
+        if (line_buffer[line_buffer_size] >= roi_min)
         {
-            read_encoders = false;
-            if (scan_task_hdl != NULL)
+            if (line_buffer_size == MAX_LINE_SIZE - 1 || line_buffer[line_buffer_size] > roi_max)
             {
-                xTaskNotify(scan_task_hdl, 0, eNoAction);
+                read_encoders = false;
+                if (scan_task_hdl != NULL)
+                {
+                    xTaskNotify(scan_task_hdl, 0, eNoAction);
+                }
+            }
+            else
+            {
+                line_buffer_size++;
             }
         }
-        else
-        {
-            line_buffer_size++;
-        }
+    }
+
+    // linac/lda trigger lags pulse_state 10us
+    esp_rom_delay_us(10);
+    gpio_set_level(LINAC_PIN, pulse_state);
+    gpio_set_level(LDA_TRIGGER, acquire);
+
+
+    // clear trigdat after rising edge
+    if (pulse_state)
+    {
+        esp_rom_delay_us(10);
+        gpio_set_level(LDA_TRIGDAT0, 0);
     }
 }
 
