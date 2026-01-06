@@ -65,10 +65,10 @@ void SPI_Transact(spi_device_handle_t handle, uint8_t *buff)
 {
     spi_transaction_t trans = {0};
 
-    uint8_t constexpr tx_data[1] = {0xF7};
+    uint8_t constexpr tx_data[6] = {0xF7, 0, 0, 0, 0, 0};
     trans.tx_buffer = tx_data;
     trans.rx_buffer = buff;
-    trans.length = 5*8 + sizeof(tx_data)*8;
+    trans.length = sizeof(tx_data)*8;
 
     spi_ret = spi_device_transmit(handle, &trans);
     ESP_ERROR_CHECK(spi_ret);
