@@ -128,6 +128,10 @@ static void PulseTimer(void *arg)
                 return;
             }
         }
+        else
+        {
+            acquire = false;
+        }
 
         read_encoders = false;
         xTaskNotify(scan_task_hdl, 0, eNoAction);
