@@ -13,21 +13,27 @@
 #define MIN_PULSE_FREQ 2
 #define MAX_PULSE_FREQ 400
 #define MAX_LINE_SIZE 256
+#define ROI_TIMEOUT 10000000
 
 static constexpr char TAG[] = "scan";
 const esp_timer_create_args_t pulse_timer_args = {
     .callback = &PulseTimer,
     .name = "pulse_timer"
 };
+const esp_timer_create_args_t roi_timer_args = {
+    .callback = &RoiTimeout,
+    .name = "roi_timeout"
+};
 esp_timer_handle_t pulse_timer;
+esp_timer_handle_t roi_timeout;
 static uint8_t pulse_state = 0;
 static uint32_t position;
 static uint32_t line_buffer[MAX_LINE_SIZE];
 static uint32_t line_buffer_size = 0;
-static uint32_t roi_min = 0;
+static uint32_t roi_min = 2080;
 static uint32_t roi_max = 2100;
 volatile bool read_encoders = false;
-bool acquire = false;
+volatile bool acquire = false;
 static TaskHandle_t scan_task_hdl;
 
 void ScanInit()
@@ -45,6 +51,7 @@ void ScanInit()
     gpio_set_drive_capability(LDA_TRIGDAT0, GPIO_DRIVE_CAP_3);
 
     ESP_ERROR_CHECK(esp_timer_create(&pulse_timer_args, &pulse_timer));
+    ESP_ERROR_CHECK(esp_timer_create(&roi_timer_args, &roi_timeout));
     ESP_ERROR_CHECK(esp_timer_start_periodic(pulse_timer, 1000000 / (2 * MIN_PULSE_FREQ)));
 }
 
@@ -56,6 +63,7 @@ void RunScan()
     xTaskNotifyStateClear(scan_task_hdl);
     line_buffer_size = 0;
     read_encoders = true;
+    ESP_ERROR_CHECK(esp_timer_start_once(roi_timeout, ROI_TIMEOUT));
     xTaskNotifyWait(0, 0, NULL, portMAX_DELAY);
 
     ESP_LOGI(TAG, "Scan finished, %d frames captured", line_buffer_size);
@@ -120,6 +128,10 @@ static void PulseTimer(void *arg)
 
     if (acquire_cache)
     {
+        if (esp_timer_is_active(roi_timeout))
+        {
+            esp_timer_stop(roi_timeout);
+        }
         if (line_buffer_size < MAX_LINE_SIZE)
         {
             line_buffer[line_buffer_size++] = position;
@@ -136,4 +148,12 @@ static void PulseTimer(void *arg)
         read_encoders = false;
         xTaskNotify(scan_task_hdl, 0, eNoAction);
     }
+}
+
+static void RoiTimeout(void *arg)
+{
+    read_encoders = false;
+    acquire = false;
+    xTaskNotify(scan_task_hdl, 0, eNoAction);
+    SendResponse("timeout");
 }

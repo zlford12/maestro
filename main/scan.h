@@ -6,5 +6,6 @@ void ScanInit();
 void RunScan();
 void SetPulseFrequency(uint16_t new_freq);
 static void PulseTimer(void *arg);
+static void RoiTimeout(void *arg);
 
 #endif //MAESTRO_SCAN_H
