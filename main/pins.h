@@ -6,9 +6,9 @@
 #define S_ENC_CS       25
 #define D_ENC_CS       24
 
-#define LINAC_PIN 32
+#define LINAC_PIN 13
 #define LDA_TRIGGER 2
-#define LDA_TRIGDAT0 12
+#define LDA_TRIGDAT0 14
 
 #define PIN_NUM_MISO     19
 #define PIN_NUM_MOSI     23

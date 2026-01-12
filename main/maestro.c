@@ -11,6 +11,7 @@
 #include "socket_helper.h"
 #include "spi_helper.h"
 #include "wifi_helper.h"
+#include "soc/rtc.h"
 
 static constexpr char TAG[] = "main";
 
@@ -28,6 +29,14 @@ void app_main(void)
             WifiConnect();
             vTaskDelay(2000 / portTICK_PERIOD_MS);
             continue;
+        }
+
+        soc_rtc_slow_clk_src_t rtc_clk_src = rtc_clk_slow_src_get();
+        if (rtc_clk_src == SOC_RTC_SLOW_CLK_SRC_XTAL32K) {
+            ESP_LOGI(TAG, "Using External 32kHz Crystal");
+        }
+        else if (rtc_clk_src == SOC_RTC_SLOW_CLK_SRC_DEFAULT) {
+            ESP_LOGI(TAG, "Using Default Internal RC Oscillator");
         }
 
         char cmd[64] = "";
