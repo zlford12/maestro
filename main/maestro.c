@@ -50,6 +50,29 @@ void app_main(void)
                 SendResponse("invalid");
             }
         }
+        else if (strncmp(cmd, "setroi ", 7) == 0)
+        {
+            char* comma = strchr(cmd + 7, ',');
+            if (comma != NULL)
+            {
+                uint32_t min_roi = (uint32_t)atoi(cmd + 7);
+                uint32_t max_roi = (uint32_t)atoi(comma + 1);
+                if (max_roi > min_roi)
+                {
+                    SetRoi(min_roi, max_roi);
+                }
+                else
+                {
+                    ESP_LOGI(TAG, "Invalid ROI values");
+                    SendResponse("invalid");
+                }
+            }
+            else
+            {
+                ESP_LOGI(TAG, "Invalid ROI format");
+                SendResponse("invalid");
+            }
+        }
         else
         {
             ESP_LOGI(TAG, "Unknown command");

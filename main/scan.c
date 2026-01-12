@@ -89,6 +89,16 @@ void SetPulseFrequency(uint16_t new_freq)
     }
 }
 
+void SetRoi(uint32_t min, uint32_t max)
+{
+    roi_min = min;
+    roi_max = max;
+
+    char roi_str[32];
+    sprintf(roi_str, "%u,%u", (unsigned int)min, (unsigned int)max);
+    SendResponse(roi_str);
+}
+
 static void PulseTimer(void *arg)
 {
     // create 50% duty cycle pulse
