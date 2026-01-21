@@ -8,10 +8,15 @@
 
 #define LINAC_PIN 13
 #define LDA_TRIGGER 2
-#define LDA_TRIGDAT0 14
+#define LDA_TRIGDAT0 12
 
 #define PIN_NUM_MISO     19
 #define PIN_NUM_MOSI     23
 #define PIN_NUM_CLK      18
+
+#define ETH_MISO_PIN     34
+#define ETH_MOSI_PIN     35
+#define ETH_CLK_PIN       14
+#define ETH_CS_PIN        15
 
 #endif //MAESTRO_PINS_H
