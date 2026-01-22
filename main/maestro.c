@@ -6,6 +6,7 @@
 #include "freertos/task.h"
 #include "sdkconfig.h"
 #include "esp_log.h"
+#include "eth_helper.h"
 #include "nvs.h"
 #include "scan.h"
 #include "socket_helper.h"
@@ -19,17 +20,18 @@ void app_main(void)
 {
     SPI_BusConfig();
     EncoderInit();
-    WifiConfig();
+    //WifiConfig();
+    EthernetConfig();
     SocketInit();
     ScanInit();
 
     while (1) {
-        if (!WifiConnected())
-        {
-            WifiConnect();
-            vTaskDelay(2000 / portTICK_PERIOD_MS);
-            continue;
-        }
+        //if (!WifiConnected())
+        //{
+        //    WifiConnect();
+        //    vTaskDelay(2000 / portTICK_PERIOD_MS);
+        //    continue;
+        //}
 
         soc_rtc_slow_clk_src_t rtc_clk_src = rtc_clk_slow_src_get();
         if (rtc_clk_src == SOC_RTC_SLOW_CLK_SRC_XTAL32K) {

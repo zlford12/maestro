@@ -4,11 +4,9 @@
 #include "esp_err.h"
 #include "esp_log.h"
 #include "driver/spi_master.h"
-#include "esp_eth_mac_w5500.h"
-#include "esp_eth_phy_w5500.h"
 
 // SPI Config
-#   define ESP_HOST         SPI2_HOST
+#   define ESP_HOST         SPI3_HOST
 
 static constexpr char TAG[] = "SPI";
 esp_err_t spi_ret;
