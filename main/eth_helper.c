@@ -55,7 +55,7 @@ void EthernetConfig()
     ESP_ERROR_CHECK(esp_eth_driver_install(&config, &eth_handle));
 
     uint8_t mac_addr[6] = {0};
-    ESP_ERROR_CHECK(esp_read_mac(mac_addr, ESP_MAC_WIFI_STA));
+    ESP_ERROR_CHECK(esp_read_mac(mac_addr, ESP_MAC_ETH));
     ESP_ERROR_CHECK(esp_eth_ioctl(eth_handle, ETH_CMD_S_MAC_ADDR, mac_addr));
 
     // set static ip

@@ -11,15 +11,15 @@
 #include "scan.h"
 #include "socket_helper.h"
 #include "spi_helper.h"
-#include "wifi_helper.h"
 #include "soc/rtc.h"
 
 static constexpr char TAG[] = "main";
 
 void app_main(void)
 {
-    SPI_BusConfig();
-    EncoderInit();
+    vTaskDelay(5000 / portTICK_PERIOD_MS);
+    //SPI_BusConfig();
+    //EncoderInit();
     //WifiConfig();
     EthernetConfig();
     SocketInit();
