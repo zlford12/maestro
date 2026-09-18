@@ -3,6 +3,7 @@
 #include "pins.h"
 #include "esp_err.h"
 #include "esp_log.h"
+#include "esp_rom_sys.h"
 #include "driver/spi_master.h"
 
 // SPI Config
@@ -45,16 +46,25 @@ void SPI_SensorConfig(spi_device_handle_t *handle, int cs_pin)
     spi_ret = spi_bus_add_device(ESP_HOST, &dev_config, handle);
     ESP_ERROR_CHECK(spi_ret);
 
-    // Configure Temperature Sensor
-    ESP_LOGI(TAG, "Configuring Temperature Sensor...");
+    // Configure IC-MBE for Artos DHL (BiSS-C, 40 bits)
+    ESP_LOGI(TAG, "Configuring IC-MBE...");
+    uint8_t tx_buf[3];
     spi_transaction_t trans = {0};
+    trans.length = 24;
+    trans.tx_buffer = tx_buf;
 
-    uint8_t constexpr tx_data[2] = {0x74, 0x27};
-    trans.tx_buffer = tx_data;
-    trans.rx_buffer = NULL;
-    trans.length = sizeof(tx_data)*8;
-    //ESP_LOGI(TAG, "Transaction Size: %d bits", trans.length);
+    // 1. Enable Master (Register 230 = 0xE6, set bit 0)
+    tx_buf[0] = 0x02; tx_buf[1] = 0xE6; tx_buf[2] = 0x01;
+    spi_ret = spi_device_transmit(*handle, &trans);
+    ESP_ERROR_CHECK(spi_ret);
 
+    // 2. Set BiSS-C mode and 5MHz clock (Register 231 = 0xE7, set bits 5:4 to 0x10)
+    tx_buf[0] = 0x02; tx_buf[1] = 0xE7; tx_buf[2] = 0x20;
+    spi_ret = spi_device_transmit(*handle, &trans);
+    ESP_ERROR_CHECK(spi_ret);
+
+    // 3. Set Slave 1 length to 40 bits (Register 224 = 0xE0, set value 0x27)
+    tx_buf[0] = 0x02; tx_buf[1] = 0xE0; tx_buf[2] = 0x27;
     spi_ret = spi_device_transmit(*handle, &trans);
     ESP_ERROR_CHECK(spi_ret);
 }
@@ -63,11 +73,26 @@ void SPI_Transact(spi_device_handle_t handle, uint8_t *buff)
 {
     spi_transaction_t trans = {0};
 
-    uint8_t constexpr tx_data[6] = {0xF7, 0, 0, 0, 0, 0};
-    trans.tx_buffer = tx_data;
-    trans.rx_buffer = buff;
-    trans.length = sizeof(tx_data)*8;
-
+    // 1. Trigger BiSS cycle (WriteInstruction 0x01 to address 244)
+    uint8_t tx_trigger[2] = {0x07, 0x01};
+    trans.tx_buffer = tx_trigger;
+    trans.length = 16;
     spi_ret = spi_device_transmit(handle, &trans);
     ESP_ERROR_CHECK(spi_ret);
+
+    // 2. Wait for cycle to complete (approx 10-25us)
+    esp_rom_delay_us(25);
+
+    // 3. Read 5 bytes of data from address 0
+    // Opcode 0x03 (ReadData), Address 0x00
+    uint8_t tx_read[7] = {0x03, 0x00, 0, 0, 0, 0, 0};
+    uint8_t rx_read[7];
+    trans.length = 56;
+    trans.tx_buffer = tx_read;
+    trans.rx_buffer = rx_read;
+    spi_ret = spi_device_transmit(handle, &trans);
+    ESP_ERROR_CHECK(spi_ret);
+
+    // Data is in rx_read[2..6]
+    memcpy(buff, &rx_read[2], 5);
 }

@@ -130,8 +130,8 @@ static void PulseTimer(void *arg)
     {
         uint8_t RxData[6];
         ReadEncoders(RxData);
-        position = (RxData[3] << 8) | RxData[4];
-        position = (position << 4) | (RxData[5] >> 4);
+        position = ((uint32_t)RxData[0] << 24) | ((uint32_t)RxData[1] << 16) |
+                   ((uint32_t)RxData[2] << 8) | RxData[3];
 
         acquire = (position >= roi_min) && (position <= roi_max);
     }

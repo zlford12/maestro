@@ -8,9 +8,9 @@
 
 #define LINAC_PIN 6
 #define LDA_TRIGGER 20
-#define LDA_TRIGDAT0 36
+#define LDA_TRIGDAT0 8
 
-#define PIN_NUM_MISO     19
+#define PIN_NUM_MISO     36
 #define PIN_NUM_MOSI     32
 #define PIN_NUM_CLK      33
 
